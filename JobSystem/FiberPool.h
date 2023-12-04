@@ -18,6 +18,6 @@ namespace Js
 
 	private:
 		std::vector<Fiber> Fibers;
-		std::vector<std::atomic_bool> IdleFibers;
+		std::vector<std::atomic_bool> FreeFibers;
 	};
 }

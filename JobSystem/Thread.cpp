@@ -28,7 +28,7 @@ bool Js::Thread::Create(const ThreadFunc func, void* data)
 
 	{
 		std::lock_guard<std::mutex> lock(IdMutex);
-		Handle = CreateThread(nullptr, 0, reinterpret_cast<LPTHREAD_START_ROUTINE>(LaunchThread), this, 0,
+		Handle = CreateThread(nullptr, 524288, reinterpret_cast<LPTHREAD_START_ROUTINE>(LaunchThread), this, 0,
 		                      reinterpret_cast<DWORD*>(&Id));
 	}
 

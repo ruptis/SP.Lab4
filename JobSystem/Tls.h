@@ -20,13 +20,6 @@ namespace Js
 		Tls() = default;
 		~Tls() = default;
 
-		void Cleanup()
-		{
-			PreviousFiberIndex = UINT16_MAX;
-			PreviousFiberStored = nullptr;
-			PreviousFiberDestination = FiberDestination::None;
-		}
-
 		size_t ThreadIndex = SIZE_MAX;
 
 		Fiber ThreadFiber;

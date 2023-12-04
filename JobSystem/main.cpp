@@ -3,80 +3,67 @@
 #include <algorithm>
 #include <string>
 #include <algorithm>
+#include <fstream>
 
 #include "JobSystem.h"
 #include "Job.h"
 #include "WindowsMinimal.h"
 
-// divide strings into 12 parts, sort each part, merge all parts into one sorted vector
-
-struct MergeData
-{
-	std::vector<std::string> FirstPart;
-	std::vector<std::string> SecondPart;
-	std::vector<std::string> SortedStrings;
-};
-
-void SortAndMerge(Js::JobSystem& jobSystem, void* data)
-{
-	auto* jobData = static_cast<MergeData*>(data);
-	std::merge(jobData->FirstPart.begin(), jobData->FirstPart.end(), jobData->SecondPart.begin(),
-	           jobData->SecondPart.end(), jobData->SortedStrings.begin());
-}
-
 struct DivideAndSortData
 {
 	uint32_t PartCount;
 	std::vector<std::string> Strings;
-	std::vector<std::string> SortedStrings;
 };
 
 void DivideAndSort(Js::JobSystem& jobSystem, void* data)
 {
 	auto* jobData = static_cast<DivideAndSortData*>(data);
 
-	OutputDebugStringA(("Sorting " + std::to_string(jobData->Strings.size()) + " strings\n").c_str());
-
 	if (jobData->PartCount == 1)
 	{
 		std::sort(jobData->Strings.begin(), jobData->Strings.end());
-		OutputDebugStringA(("Finished sorting " + std::to_string(jobData->Strings.size()) + " strings\n").c_str());
 		return;
 	}
 
 	DivideAndSortData firstPartData;
 	firstPartData.PartCount = jobData->PartCount / 2;
-	std::copy_n(jobData->Strings.begin(), jobData->Strings.size() / 2,
-	            std::back_inserter(firstPartData.Strings));
+	firstPartData.Strings.assign(jobData->Strings.begin(), jobData->Strings.begin() + jobData->Strings.size() / 2);
+
 	DivideAndSortData secondPartData;
 	secondPartData.PartCount = jobData->PartCount - jobData->PartCount / 2;
-	std::copy(jobData->Strings.begin() + jobData->Strings.size() / 2, jobData->Strings.end(),
-	          std::back_inserter(secondPartData.Strings));
+	secondPartData.Strings.assign(jobData->Strings.begin() + jobData->Strings.size() / 2, jobData->Strings.end());
 
-	const Js::Job firstPartJob(DivideAndSort, &firstPartData);
-	const Js::Job secondPartJob(DivideAndSort, &secondPartData);
-	std::vector<Js::Job> dependencies = {firstPartJob, secondPartJob};
+	Js::Job firstPartJob{DivideAndSort, &firstPartData};
+	Js::Job secondPartJob{DivideAndSort, &secondPartData};
+	auto jobs = std::vector<Js::Job>{firstPartJob, secondPartJob};
 
 	Js::Counter counter;
 
-	jobSystem.AddJobs(dependencies, &counter);
-	OutputDebugStringA(("Waiting for " + std::to_string(jobData->Strings.size()) + " strings to be sorted\n").c_str());
+	jobSystem.AddJobs(jobs, &counter);
+
 	jobSystem.Wait(counter, 0);
 
-	MergeData mergeData;
-	mergeData.FirstPart = std::move(firstPartData.SortedStrings);
-	mergeData.SecondPart = std::move(secondPartData.SortedStrings);
+	std::merge(firstPartData.Strings.begin(), firstPartData.Strings.end(), secondPartData.Strings.begin(),
+	           secondPartData.Strings.end(), jobData->Strings.begin());
+}
 
-	Js::Job mergeJob(SortAndMerge, &mergeData);
+void ReadFile(const char* str, std::vector<std::string>& vector)
+{
+	std::ifstream file(str);
+	std::string line;
+	while (std::getline(file, line))
+	{
+		vector.push_back(line);
+	}
+}
 
-	Js::Counter mergeCounter;
-
-	jobSystem.AddJob(mergeJob, &mergeCounter);
-	OutputDebugStringA(("Waiting for " + std::to_string(jobData->Strings.size()) + " strings to be merged\n").c_str());
-	jobSystem.Wait(mergeCounter, 0);
-
-	jobData->SortedStrings = std::move(mergeData.SortedStrings);
-	OutputDebugStringA(("Finished sorting and merging " + std::to_string(jobData->Strings.size()) + " strings\n").c_str());
+void WriteToFile(const char* str, const std::vector<std::string>& vector)
+{
+	std::ofstream file(str);
+	for (const auto& line : vector)
+	{
+		file << line << std::endl;
+	}
 }
 
 int main()
@@ -85,28 +72,24 @@ int main()
 	jobSystem.Initialize();
 
 	std::vector<std::string> strings;
-	strings.reserve(1024);
-	for (int i = 0; i < 1024; ++i)
-	{
-		strings.push_back(std::to_string(rand()));
-	}
+	ReadFile("strings.txt", strings);
 
 	std::cout << "Sorting " << strings.size() << " strings" << std::endl;
 
 	DivideAndSortData data;
+	data.PartCount = 16;
 	std::copy(strings.begin(), strings.end(), std::back_inserter(data.Strings));
-	data.PartCount = 12;
 
-	Js::Job job(DivideAndSort, &data);
+	Js::Job job{DivideAndSort, &data};
+	Js::Counter counter;
 
-	jobSystem.AddJob(job);
+	jobSystem.AddJob(job, &counter);
 
-	std::cout << "Waiting for job to finish" << std::endl;
-
-	while (data.SortedStrings.empty())
-	{
-		Sleep(1);
-	}
+	jobSystem.Wait(counter, 0);
 
 	jobSystem.Shutdown(true);
+
+	std::cout << "Sorted strings: " << std::is_sorted(data.Strings.begin(), data.Strings.end()) << std::endl;
+
+	WriteToFile("sorted_strings.txt", data.Strings);
 }

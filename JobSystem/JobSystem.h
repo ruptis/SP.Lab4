@@ -26,7 +26,7 @@ namespace Js
 		~Options() = default;
 
 		size_t ThreadCount;
-		uint16_t FiberCount = 160;
+		uint16_t FiberCount = 512;
 
 		size_t LowPriorityQueueSize = 4096;
 		size_t NormalPriorityQueueSize = 2048;
@@ -57,7 +57,7 @@ namespace Js
 		friend class Counter;
 
 		std::atomic_bool Initialized{false};
-		std::atomic<size_t> RunningThreads{0};
+		std::atomic<size_t> InitializedThreads{0};
 		std::atomic_bool Quit{false};
 
 		size_t ThreadCount;
@@ -65,7 +65,7 @@ namespace Js
 
 		FiberPool FiberPool;
 
-		void CleanupPreviousFiber(Tls* tls);
+		void CleanupPreviousFiber(Tls* tls = nullptr);
 
 		size_t GetCurrentThreadIndex();
 		Thread& GetCurrentThread();
@@ -80,5 +80,6 @@ namespace Js
 
 		static void ThreadWorker(Thread* thread);
 		static void FiberWorker(Fiber* fiber);
+		static void FiberMain(Fiber* fiber);
 	};
 }

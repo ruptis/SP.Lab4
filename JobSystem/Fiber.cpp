@@ -18,7 +18,7 @@ namespace
 
 Js::Fiber::Fiber()
 {
-	Handle = CreateFiber(0, reinterpret_cast<LPFIBER_START_ROUTINE>(LaunchFiber), this);
+	Handle = CreateFiber(524288, reinterpret_cast<LPFIBER_START_ROUTINE>(LaunchFiber), this);
 	ThreadFiber = false;
 }
 

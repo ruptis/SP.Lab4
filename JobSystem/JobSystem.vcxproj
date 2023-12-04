@@ -132,6 +132,7 @@
     <ClCompile Include="FiberPool.cpp" />
     <ClCompile Include="Job.cpp" />
     <ClCompile Include="JobSystem.cpp" />
+    <ClCompile Include="Log.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Thread.cpp" />
     <ClCompile Include="WindowsMinimal.h" />
@@ -143,9 +144,13 @@
     <ClInclude Include="Job.h" />
     <ClInclude Include="JobSystem.h" />
     <ClInclude Include="JSException.h" />
+    <ClInclude Include="Log.h" />
     <ClInclude Include="Queue.h" />
     <ClInclude Include="Thread.h" />
     <ClInclude Include="Tls.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="strings.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
